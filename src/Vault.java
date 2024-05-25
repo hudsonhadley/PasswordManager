@@ -1,6 +1,10 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Scanner;
 
 /**
  * A class to store passwords. Passwords can be written to a file in an encrypted manner. A master
@@ -49,15 +53,70 @@ public class Vault {
      * @throws IOException if the file is not found or if the file is formatted incorrectly
      */
     public void readFile(String fileName) throws IOException {
+        File file = new File(fileName);
+        Scanner fileScanner = new Scanner(file);
+        fileScanner.useDelimiter("");
 
+        // Decrypt the file
+        StringBuilder fileStringBuilder = new StringBuilder();
+
+        while (fileScanner.hasNext()) {
+            fileStringBuilder.append(
+                    fileScanner.next()
+            );
+        }
+
+        String decryptedString = decrypt(fileStringBuilder.toString());
+
+        Scanner stringScanner = new Scanner(decryptedString);
+        Scanner lineScanner;
+
+        String firstLine = stringScanner.nextLine();
+        lineScanner = new Scanner(firstLine);
+        lineScanner.useDelimiter(": ");
+
+        lineScanner.next(); // Skip "Name: "
+        this.name = lineScanner.next();
+        lineScanner.close();
+
+        String secondLine = stringScanner.nextLine();
+        lineScanner = new Scanner(secondLine);
+        lineScanner.useDelimiter(": ");
+
+        lineScanner.next(); // Skip "Master Password: "
+        this.masterPassword = lineScanner.next();
+        lineScanner.close();
+
+        stringScanner.nextLine(); // Skip the blank line
+        while (stringScanner.hasNext()) {
+            lineScanner = new Scanner(stringScanner.nextLine());
+            lineScanner.useDelimiter(", ");
+
+            String name = lineScanner.next();
+            String username = lineScanner.next();
+            String password = lineScanner.next();
+
+            addPassword(name, username, password);
+
+            lineScanner.close();
+        }
     }
 
     /**
      * Writes a vault to a file with the filename being the name of the vault
      * @throws NoSuchFieldException if the name of the Vault hasn't been set
+     * @throws FileNotFoundException if we are unable to write to a file with the name of the vault
      */
-    public void writeToFile() throws NoSuchFieldException {
+    public void writeToFile() throws NoSuchFieldException, FileNotFoundException {
+        if (name.isEmpty()) // name == ""
+            throw new NoSuchFieldException("Name has not been set. Unable to name file");
 
+        PrintWriter fileWriter = new PrintWriter(name + ".txt");
+
+        String encryptedString = encrypt(this.toString());
+        fileWriter.print(encryptedString);
+
+        fileWriter.close();
     }
 
     /**
@@ -66,7 +125,7 @@ public class Vault {
      * @return an encrypted String
      */
     private String encrypt(String plaintext) {
-        return "";
+        return plaintext;
     }
 
     /**
@@ -75,7 +134,7 @@ public class Vault {
      * @return the decrypted String
      */
     private String decrypt(String ciphertext) {
-        return "";
+        return ciphertext;
     }
 
     /**
