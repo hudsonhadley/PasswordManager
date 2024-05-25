@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.util.Map;
+import java.util.HashMap;
 import java.nio.file.FileAlreadyExistsException;
 
 /**
@@ -27,7 +28,9 @@ public class Vault {
      * Constructs an empty vault, initializing the member variables
      */
     public Vault() {
-
+        name = "";
+        masterPassword = "";
+        passwords = new HashMap<>();
     }
 
     /**
@@ -36,7 +39,9 @@ public class Vault {
      * @param masterPassword the master password we want to ascribe
      */
     public Vault(String name, String masterPassword) {
-
+        this.name = name;
+        this.masterPassword = masterPassword;
+        passwords = new HashMap<>();
     }
 
     /**
@@ -77,14 +82,15 @@ public class Vault {
      * @return the master password
      */
     public String getMasterPassword() {
-        return "";
+        return masterPassword;
     }
 
     /**
      * Sets the master password
+     * @param masterPassword the master password we want to set
      */
-    public void setMasterPassword() {
-
+    public void setMasterPassword(String masterPassword) {
+        this.masterPassword = masterPassword;
     }
 
     /**
@@ -93,7 +99,7 @@ public class Vault {
      * @param password the password we want to add
      */
     public void addPassword(String name, Password password) {
-
+        passwords.put(name, new Password(password));
     }
 
     /**
@@ -103,7 +109,7 @@ public class Vault {
      * @param password the password we want to add
      */
     public void addPassword(String name, String username, String password) {
-
+        passwords.put(name, new Password(username, password));
     }
 
     /**
@@ -111,7 +117,7 @@ public class Vault {
      * @param name the name of the password we want to delete
      */
     public void deletePassword(String name) {
-
+        passwords.remove(name);
     }
 
     /**
@@ -120,7 +126,7 @@ public class Vault {
      * @param username the username we want to set
      */
     public void setUsername(String name, String username) {
-
+        passwords.get(name).setUsername(username);
     }
 
     /**
@@ -129,6 +135,6 @@ public class Vault {
      * @param password the password we want to set
      */
     public void setPassword(String name, String password) {
-
+        passwords.get(name).setPassword(password);
     }
 }
