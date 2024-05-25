@@ -13,13 +13,22 @@ public class Password {
     private String password;
 
     /**
-     * Constructs a Password with a username and password.
+     * Constructs a Password with a username and password
      * @param username a String representation of a username
      * @param password a String represent of a password
      */
     public Password(String username, String password) {
         this.username = username;
         this.password = password;
+    }
+
+    /**
+     * A copy constructor that makes a new Password with the same username and password
+     * @param other a Password object we want to copy
+     */
+    public Password(Password other) {
+        this.username = other.username;
+        this.password = other.password;
     }
 
     /**
