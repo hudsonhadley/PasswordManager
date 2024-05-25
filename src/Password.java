@@ -18,21 +18,22 @@ public class Password {
      * @param password a String represent of a password
      */
     public Password(String username, String password) {
-
+        this.username = username;
+        this.password = password;
     }
 
     /**
      * @return the username
      */
     public String getUsername() {
-        return "";
+        return username;
     }
 
     /**
      * @return the password
      */
     public String getPassword() {
-        return "";
+        return password;
     }
 
     /**
@@ -40,7 +41,7 @@ public class Password {
      * @param username the username we want to set
      */
     public void setUsername(String username) {
-
+        this.username = username;
     }
 
     /**
@@ -48,6 +49,6 @@ public class Password {
      * @param password the password we want to set
      */
     public void setPassword(String password) {
-
+        this.password = password;
     }
 }
