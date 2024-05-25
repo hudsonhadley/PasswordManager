@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
-import java.nio.file.FileAlreadyExistsException;
 
 /**
  * A class to store passwords. Passwords can be written to a file in an encrypted manner. A master
@@ -56,17 +55,26 @@ public class Vault {
     /**
      * Writes a vault to a file with the filename being the name of the vault
      * @throws NoSuchFieldException if the name of the Vault hasn't been set
-     * @throws FileAlreadyExistsException if there already exists a file with the filename
      */
-    public void writeToFile() throws NoSuchFieldException, FileAlreadyExistsException {
+    public void writeToFile() throws NoSuchFieldException {
 
     }
 
     /**
-     * Encrypts the current vault
-     * @return an encrypted String representing the vault
+     * Encrypts the given plaintext
+     * @param plaintext a String plaintext we want to encrypt
+     * @return an encrypted String
      */
-    private String encrypt() {
+    private String encrypt(String plaintext) {
+        return "";
+    }
+
+    /**
+     * Decrypts the given ciphertext
+     * @param ciphertext an encrypted String we want to decrypt
+     * @return the decrypted String
+     */
+    private String decrypt(String ciphertext) {
         return "";
     }
 
@@ -75,7 +83,19 @@ public class Vault {
      */
     @Override
     public String toString() {
-        return "";
+        StringBuilder vaultBuilder = new StringBuilder();
+
+        vaultBuilder.append(String.format("Name: %s\n", name));
+        vaultBuilder.append(String.format("Master Password: %s\n\n", masterPassword));
+
+        for (String record: passwords.keySet()) {
+            Password recordPassword = passwords.get(record);
+
+            vaultBuilder.append(String.format("%s, %s, %s\n",
+                    record, recordPassword.getUsername(), recordPassword.getPassword()));
+        }
+
+        return vaultBuilder.toString();
     }
 
     /**
