@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -49,45 +46,17 @@ public class Vault {
 
     /**
      * Reads an encrypted file and sets the member variables as defined in the file.
-     * @param fileName the name of the file we want to read
      * @throws IOException if the file is not found or if the file is formatted incorrectly
      */
-    public void readFile(String fileName) throws IOException {
-        File file = new File(fileName);
-        Scanner fileScanner = new Scanner(file);
-        fileScanner.useDelimiter("");
+    public void readFile() throws IOException {
+        File file = new File(name);
+        FileInputStream inputStream = new FileInputStream(file);
+        byte[] fileBytes = inputStream.readAllBytes();
 
-        // Decrypt the file
-        StringBuilder fileStringBuilder = new StringBuilder();
-
-        while (fileScanner.hasNext()) {
-            fileStringBuilder.append(
-                    fileScanner.next()
-            );
-        }
-
-        String decryptedString = decrypt(fileStringBuilder.toString());
-
+        String decryptedString = AES.decrypt(fileBytes, masterPassword);
         Scanner stringScanner = new Scanner(decryptedString);
+
         Scanner lineScanner;
-
-        String firstLine = stringScanner.nextLine();
-        lineScanner = new Scanner(firstLine);
-        lineScanner.useDelimiter(": ");
-
-        lineScanner.next(); // Skip "Name: "
-        this.name = lineScanner.next();
-        lineScanner.close();
-
-        String secondLine = stringScanner.nextLine();
-        lineScanner = new Scanner(secondLine);
-        lineScanner.useDelimiter(": ");
-
-        lineScanner.next(); // Skip "Master Password: "
-        this.masterPassword = lineScanner.next();
-        lineScanner.close();
-
-        stringScanner.nextLine(); // Skip the blank line
         while (stringScanner.hasNext()) {
             lineScanner = new Scanner(stringScanner.nextLine());
             lineScanner.useDelimiter(", ");
@@ -105,36 +74,17 @@ public class Vault {
     /**
      * Writes a vault to a file with the filename being the name of the vault
      * @throws NoSuchFieldException if the name of the Vault hasn't been set
-     * @throws FileNotFoundException if we are unable to write to a file with the name of the vault
+     * @throws IOException if we are unable to write to a file with the name of the vault
      */
-    public void writeToFile() throws NoSuchFieldException, FileNotFoundException {
+    public void writeToFile() throws NoSuchFieldException, IOException {
         if (name.isEmpty()) // name == ""
             throw new NoSuchFieldException("Name has not been set. Unable to name file");
 
-        PrintWriter fileWriter = new PrintWriter(name + ".txt");
+        byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword);
 
-        String encryptedString = encrypt(this.toString());
-        fileWriter.print(encryptedString);
-
-        fileWriter.close();
-    }
-
-    /**
-     * Encrypts the given plaintext
-     * @param plaintext a String plaintext we want to encrypt
-     * @return an encrypted String
-     */
-    private String encrypt(String plaintext) {
-        return plaintext;
-    }
-
-    /**
-     * Decrypts the given ciphertext
-     * @param ciphertext an encrypted String we want to decrypt
-     * @return the decrypted String
-     */
-    private String decrypt(String ciphertext) {
-        return ciphertext;
+        FileOutputStream outFile = new FileOutputStream(name);
+        outFile.write(encryptedBytes);
+        outFile.close();
     }
 
     /**
@@ -143,9 +93,6 @@ public class Vault {
     @Override
     public String toString() {
         StringBuilder vaultBuilder = new StringBuilder();
-
-        vaultBuilder.append(String.format("Name: %s\n", name));
-        vaultBuilder.append(String.format("Master Password: %s\n\n", masterPassword));
 
         for (String record: passwords.keySet()) {
             Password recordPassword = passwords.get(record);
