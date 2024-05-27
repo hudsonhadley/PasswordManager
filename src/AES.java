@@ -73,6 +73,8 @@ public class AES {
         if (key.length != 16 && key.length != 24 && key.length != 32)
             throw new IllegalArgumentException("Invalid key size. Must be 128, 192, or 256 bits");
 
+        byte[][] keySchedule = makeKeySchedule(key);
+
         // TODO finish method
         return new byte[]{};
     }
@@ -138,6 +140,98 @@ public class AES {
         int col = b & 0x0f; // Gets the last 4 bits of the byte
 
         return inverseSBOX[row][col];
+    }
+
+    /**
+     * Generates the round key schedule for AES. The number of rounds depends on the initialRoundKey length.
+     * @param initialRoundKey the initial key which must be either 128, 192, or 256 bits
+     * @return an array of byte arrays that is the key schedule for AES. Note that this will be 11 for AES-128,
+     * 13 for AES-192, and 15 for AES-256
+     * @throws IllegalArgumentException if the initial round key has a size that is not 128, 192, or 256 bits
+     */
+    public static byte[][] makeKeySchedule(byte[] initialRoundKey) {
+        int keySize = initialRoundKey.length;
+        int rounds;
+
+        // Determine the number of rounds we need
+        if (keySize == 16)
+            rounds = 11;
+        else if (keySize == 24)
+            rounds = 13;
+        else if (keySize == 32)
+            rounds = 15;
+        else
+            throw new IllegalArgumentException("Invalid key size");
+
+        // First we need to generate our round constants
+        byte[][] roundConstants = new byte[rounds][4];
+
+        // The zero index isn't necessary since it is defined as the initial key and so doesn't need a round constant
+        roundConstants[0] = new byte[]{0x00, 0x00, 0x00, 0x00};
+
+        // The first is defined as follows
+        roundConstants[1] = new byte[]{0x01, 0x00, 0x00, 0x00};
+
+        // The rest are defined recursively
+        for (int i = 2; i < roundConstants.length; i++) {
+            // Get the previous one
+            byte previous = roundConstants[i - 1][0];
+            // The new one will just be the previous one times 2
+            byte newByte = b(2 * previous);
+
+            // If the previous one is over 0x80 (128), multiplying times 2 spills over the byte limit, so xor with 0x11b
+            if (Byte.toUnsignedInt(previous) >= 0x80)
+                newByte ^= (byte) 0x11b;
+
+            roundConstants[i] = new byte[]{newByte, 0x00, 0x00, 0x00};
+        }
+
+
+        // Now we can get to actually creating the key schedule
+        byte[][] keySchedule = new byte[rounds][keySize];
+
+        // The first round is just the initial key
+        keySchedule[0] = initialRoundKey;
+
+        for (int i = 1; i < keySchedule.length; i++) {
+            // For each round we need to perform operations on the last 4 bytes of the previous round, and then derive
+            // the other sets of 4 bytes
+
+            byte[] lastBytes = new byte[4];
+
+            for (int j = 0; j < 4; j++)
+                lastBytes[j] = keySchedule[i - 1][keySize - 4 + j];
+
+            // First we need to perform RotWord on the last 4 bytes, which shifts each byte down an index
+            byte firstByte = lastBytes[0];
+            for (int j = 0; j < 3; j++)
+                lastBytes[j] = lastBytes[j + 1];
+            lastBytes[3] = firstByte;
+
+            // Then we use the S() function on each byte
+            for (int j = 0; j < 4; j++)
+                lastBytes[j] = S(lastBytes[j]);
+
+            // Lastly we use our round constants
+            for (int j = 0; j < 4; j++)
+                lastBytes[j] ^= roundConstants[i][j];
+
+
+            // Now to make the keySchedules we xor this byte we've made with the previous first byte set
+            for (int j = 0; j < 4; j++)
+                keySchedule[i][j] = b(keySchedule[i - 1][j] ^ lastBytes[j]);
+
+            // For the rest of the bytes, we xor the previous key schedules in the same index, with the last index of
+            // the key in the current round
+            for (int j = 1; j < keySize / 4; j++) {
+
+                for (int k = 0; k < 4; k++) {
+                    keySchedule[i][j * 4 + k] = b(keySchedule[i][(j * 4 + k) - 4] ^ keySchedule[i - 1][j * k + 4]);
+                }
+            }
+        }
+
+        return keySchedule;
     }
 
     /**
