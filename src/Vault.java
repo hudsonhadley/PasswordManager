@@ -53,7 +53,7 @@ public class Vault {
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
 
-        String decryptedString = AES.decrypt(fileBytes, masterPassword, 128);
+        String decryptedString = AES.decrypt(fileBytes, masterPassword);
         Scanner stringScanner = new Scanner(decryptedString);
 
         Scanner lineScanner;
@@ -80,7 +80,7 @@ public class Vault {
         if (name.isEmpty()) // name == ""
             throw new NoSuchFieldException("Name has not been set. Unable to name file");
 
-        byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword, 128);
+        byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword);
 
         FileOutputStream outFile = new FileOutputStream(name);
         outFile.write(encryptedBytes);

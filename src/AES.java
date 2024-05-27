@@ -1,6 +1,7 @@
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -65,15 +66,49 @@ public class AES {
     /**
      * Encrypts a byte array using AES
      * @param plaintext the byte array we want to encrypt
-     * @param key the key which must be 128, 192, or 256 bits (16, 24, or 32 bytes)
+     * @param key the key which must be 128 bits (16 bytes)
      * @return the encrypted byte array
-     * @throws IllegalArgumentException if the key is not 128, 192, or 256 bits (16, 24, or 32 bytes)
+     * @throws IllegalArgumentException if the key is not 128 bits (16 bytes)
      */
     public static byte[] encrypt(byte[] plaintext, byte[] key) throws IllegalArgumentException {
-        if (key.length != 16 && key.length != 24 && key.length != 32)
-            throw new IllegalArgumentException("Invalid key size. Must be 128, 192, or 256 bits");
+        if (key.length != 16)
+            throw new IllegalArgumentException("Invalid key size. Must be 128 bits");
+
+
+
+        // There is a block size of 128 bits or 16 bytes, so we need to pad until we have divisibility of 16
+        byte[] paddedPlaintext = pad(plaintext, 16);
+        byte[][] blocks = new byte[paddedPlaintext.length / 16][16];
+
+        // Block up the plaintext to be 16 byte blocks
+        for (int i = 0; i < paddedPlaintext.length / 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                blocks[i][j] = paddedPlaintext[i * 16 + j];
+            }
+        }
 
         byte[][] keySchedule = makeKeySchedule(key);
+
+        // Now we need to go through each block of 16 bytes and encrypt
+        for (int index = 0; index < blocks.length; index++) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+        }
+
+
+
+
 
         // TODO finish method
         return new byte[]{};
@@ -82,9 +117,9 @@ public class AES {
     /**
      * Decrypts a byte array using AES
      * @param ciphertext the byte array we want to decrypt
-     * @param key the key which must be 128, 192, or 256 bits (16, 24, or 32 bytes)
+     * @param key the key which must be 128 bits (16 bytes)
      * @return the decrypted String
-     * @throws IllegalArgumentException if the key is not 128, 192, or 256 bits (16, 24, or 32 bytes)
+     * @throws IllegalArgumentException if the key is not 128 bits (16 bytes)
      */
     public static String decrypt(byte[] ciphertext, byte[] key) throws IllegalArgumentException {
         if (key.length != 16 && key.length != 24 && key.length != 32)
@@ -98,24 +133,53 @@ public class AES {
      * Encrypts a byte array using AES
      * @param plaintext the String we want to encrypt
      * @param key the String we want to encrypt with
-     * @param keySize AES can be done with a key size of 128, 192, or 256 bits
-     * @throws IllegalArgumentException if the keySize is not 128, 192, or 256
      * @return the encrypted byte array
      */
-    public static byte[] encrypt(String plaintext, String key, int keySize) throws IllegalArgumentException {
-        return encrypt(stringToByteArray(plaintext), expandKey(key, keySize));
+    public static byte[] encrypt(String plaintext, String key) {
+        return encrypt(stringToByteArray(plaintext), expandKey(key, 128));
     }
 
     /**
      * Decrypts a byte array using AES
      * @param ciphertext the byte array we want to decrypt
      * @param key the String we want to decrypt with
-     * @param keySize AES can be done with a key size of 128, 192, or 256 bits
-     * @throws IllegalArgumentException if the keySize is not 128, 192, or 256
      * @return the decrypted String
      */
-    public static String decrypt(byte[] ciphertext, String key, int keySize) throws IllegalArgumentException {
-        return decrypt(ciphertext, expandKey(key, keySize));
+    public static String decrypt(byte[] ciphertext, String key) {
+        return decrypt(ciphertext, expandKey(key, 128));
+    }
+
+    /**
+     * Pads the end of a byte array to be the desired amount of bytes divisible by. For example if 16 is the desired
+     * byte divisibility, it will pad onto the byte array until the length is divisible by 16
+     * @param bytes the byte array we want to pad
+     * @param divisibility the divisibility we require
+     * @return the padded byte array
+     * @throws IllegalArgumentException if the divisibility is less than 1
+     */
+    private static byte[] pad(byte[] bytes, int divisibility) throws IllegalArgumentException {
+        if (divisibility < 1)
+            throw new IllegalArgumentException("Divisibility must be positive");
+
+        ArrayList<Byte> paddedBytes = new ArrayList<>();
+        for (byte aByte : bytes) {
+            paddedBytes.add(aByte);
+        }
+
+        // We will add the opposite of the last bit (if it is 1, 0s will be added)
+        // Performing the and operation on the last byte with 0x01 cancels everything out but the last bit
+        byte padding = ((bytes[bytes.length - 1] & 0x01) == 0x01) ? b(0xff) : b(0x01);
+
+        while (paddedBytes.size() % divisibility != 0) {
+            paddedBytes.add(padding);
+        }
+
+        byte[] newBytes = new byte[paddedBytes.size()];
+
+        for (int i = 0; i < paddedBytes.size(); i++)
+            newBytes[i] = paddedBytes.get(i);
+
+        return newBytes;
     }
 
     /**
@@ -144,27 +208,18 @@ public class AES {
 
     /**
      * Generates the round key schedule for AES. The number of rounds depends on the initialRoundKey length.
-     * @param initialRoundKey the initial key which must be either 128, 192, or 256 bits
-     * @return an array of byte arrays that is the key schedule for AES. Note that this will be 11 for AES-128,
-     * 13 for AES-192, and 15 for AES-256
-     * @throws IllegalArgumentException if the initial round key has a size that is not 128, 192, or 256 bits
+     * @param initialRoundKey the initial key which must be either 128 bits (16 bytes)
+     * @return an array of byte arrays that is the key schedule for AES. Note that this will be 11 for AES-128
+     * @throws IllegalArgumentException if the initial round key has a size that is not 128
      */
     public static byte[][] makeKeySchedule(byte[] initialRoundKey) {
-        int keySize = initialRoundKey.length;
-        int rounds;
+        if (initialRoundKey.length != 16)
+            throw new IllegalArgumentException("Key size must be 128 bits");
 
-        // Determine the number of rounds we need
-        if (keySize == 16)
-            rounds = 11;
-        else if (keySize == 24)
-            rounds = 13;
-        else if (keySize == 32)
-            rounds = 15;
-        else
-            throw new IllegalArgumentException("Invalid key size");
+        int rounds = 11;
 
         // First we need to generate our round constants
-        byte[][] roundConstants = new byte[rounds][4];
+        byte[][] roundConstants = new byte[11][4];
 
         // The zero index isn't necessary since it is defined as the initial key and so doesn't need a round constant
         roundConstants[0] = new byte[]{0x00, 0x00, 0x00, 0x00};
@@ -188,7 +243,7 @@ public class AES {
 
 
         // Now we can get to actually creating the key schedule
-        byte[][] keySchedule = new byte[rounds][keySize];
+        byte[][] keySchedule = new byte[11][16];
 
         // The first round is just the initial key
         keySchedule[0] = initialRoundKey;
@@ -200,7 +255,8 @@ public class AES {
             byte[] lastBytes = new byte[4];
 
             for (int j = 0; j < 4; j++)
-                lastBytes[j] = keySchedule[i - 1][keySize - 4 + j];
+                // 7, 8, 9, 10 are the last four
+                lastBytes[j] = keySchedule[i - 1][7 + j];
 
             // First we need to perform RotWord on the last 4 bytes, which shifts each byte down an index
             byte firstByte = lastBytes[0];
@@ -223,7 +279,7 @@ public class AES {
 
             // For the rest of the bytes, we xor the previous key schedules in the same index, with the last index of
             // the key in the current round
-            for (int j = 1; j < keySize / 4; j++) {
+            for (int j = 1; j < 4; j++) {
 
                 for (int k = 0; k < 4; k++) {
                     keySchedule[i][j * 4 + k] = b(keySchedule[i][(j * 4 + k) - 4] ^ keySchedule[i - 1][j * k + 4]);
