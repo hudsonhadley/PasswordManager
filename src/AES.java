@@ -1,11 +1,10 @@
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 /**
- * A class with static methods used to encrypt and decrypt with AES cryptography.
+ * A class with static methods used to encrypt and decrypt with AES-128 cryptography.
  * @author Hudson Hadley
  */
 public class AES {
@@ -78,6 +77,8 @@ public class AES {
 
         // There is a block size of 128 bits or 16 bytes, so we need to pad until we have divisibility of 16
         byte[] paddedPlaintext = pad(plaintext, 16);
+        byte[] cipher = new byte[paddedPlaintext.length];
+
         byte[][] blocks = new byte[paddedPlaintext.length / 16][16];
 
         // Block up the plaintext to be 16 byte blocks
@@ -92,26 +93,103 @@ public class AES {
         // Now we need to go through each block of 16 bytes and encrypt
         for (int index = 0; index < blocks.length; index++) {
 
+            // addRoundKey
+            blocks[index] = xor(blocks[index], keySchedule[0]);
 
+            for (int i = 1; i < 10; i++) {
+                // subBytes
+                blocks[index] = S(blocks[index]);
+                // shiftRows
+                blocks[index] = shiftRows(blocks[index]);
+                // mixColumns
+                blocks[index] = mixColumns(blocks[index]);
+                // addRoundKey
+                blocks[index] = xor(blocks[index], keySchedule[i]);
+            }
 
+            // subBytes
+            blocks[index] = S(blocks[index]);
+            // shiftRows
+            blocks[index] = shiftRows(blocks[index]);
+            // addRoundKey
+            blocks[index] = xor(blocks[index], keySchedule[keySchedule.length - 1]);
 
-
-
-
-
-
-
-
-
-
+            // Now we have the encrypted block, we will put it in the cipher in the correct spot
+            for (int i = 0; i < 16; i++) {
+                cipher[16 * index + i] = blocks[index][i];
+            }
         }
 
+        return cipher;
+    }
 
+    /**
+     * Combines the elements using a linear transformation, treating the 16 byte array as a 4x4 matrix. This corresponds
+     * to the mixColumns step in AES.
+     * @param bytes the bytes we want to combine
+     * @return the mixed byte[]
+     * @throws IllegalArgumentException if bytes does not have length 16
+     */
+    private static byte[] mixColumns(byte[] bytes) throws IllegalArgumentException {
+        if (bytes.length != 16)
+            throw new IllegalArgumentException("bytes must be length 16");
 
+        byte[] result = new byte[16];
 
+        // We need to perform the operation on each 4 groups of bytes
+        for (int i = 0 ; i < 4; i++) {
+            int start = i * 4;
 
-        // TODO finish method
-        return new byte[]{};
+            result[start] = b((2 * bytes[start]) ^ (3 * bytes[start + 1]) ^ bytes[start + 2] ^ bytes[start + 3]);
+            result[start + 1] = b(bytes[start] ^ (2 * bytes[start + 1]) ^ (3 * bytes[start + 2]) ^ bytes[start + 3]);
+            result[start + 2] = b(bytes[start] ^ bytes[start + 1] ^ (2 * bytes[start + 2]) ^ (3 * bytes[start + 3]));
+            result[start + 3] = b((3 * bytes[start]) ^ bytes[start + 1] ^ bytes[start + 2] ^ (2 * bytes[start + 3]));
+        }
+
+        return result;
+    }
+
+    /**
+     * Moves the elements in a 16 length byte array according to the shiftRows step in AES. If we imagine the bytes as
+     * a 4x4 matrix, the first row is unchanged, the second shifts to the left by one, the third shift to the left by
+     * two, and the fourth shifts to the left by three.
+     * @param bytes the bytes we want to shift around
+     * @return the shifted byte array
+     * @throws IllegalArgumentException if the byte[] is not length 16
+     */
+    private static byte[] shiftRows(byte[] bytes) {
+        if (bytes.length != 16)
+            throw new IllegalArgumentException("bytes must be length 16");
+
+        byte[] result = new byte[16];
+
+        for (int i = 0; i < 4; i++) {
+            // The shift amount is equal to the row we are in
+            for (int j = 0; j < 4; j++) {
+                result[i * 4 + j] = bytes[i * 4 + ((j + i) % 4)];
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Xors two byte arrays together going index by index
+     * @param byte1 the first byte we want to xor
+     * @param byte2 the second byte we want to xor
+     * @throws IllegalArgumentException if the two bytes have unequal length
+     * @return the byte array achieved by xoring each byte
+     */
+    private static byte[] xor (byte[] byte1, byte[]byte2) {
+        if (byte1.length != byte2.length)
+            throw new IllegalArgumentException("byte1 has a different size than byte2");
+
+        byte[] result = new byte[byte1.length];
+
+        for (int i = 0; i < byte1.length; i++)
+            result[i] = b(byte1[i] ^ byte2[i]);
+
+        return result;
     }
 
     /**
@@ -195,6 +273,20 @@ public class AES {
     }
 
     /**
+     * Applies the Rijndael S-box to a byte array
+     * @param b the byte array we want to work with
+     * @return the byte array output of the S-box
+     */
+    public static byte[] S(byte[] b) {
+        byte[] result = new byte[b.length];
+
+        for (int i = 0; i < result.length; i++)
+            result[i] = S(b[i]);
+
+        return result;
+    }
+
+    /**
      * Applies the inverse of the Rijndael S-box to a byte
      * @param b the byte we want to work with
      * @return the output of the inverse S-box
@@ -207,6 +299,20 @@ public class AES {
     }
 
     /**
+     * Applies the inverse Rijndael S-box to a byte array
+     * @param b the byte array we want to work with
+     * @return the byte array output of the inverse S-box
+     */
+    public static byte[] inverseS(byte[] b) {
+        byte[] result = new byte[b.length];
+
+        for (int i = 0; i < result.length; i++)
+            result[i] = inverseS(b[i]);
+
+        return result;
+    }
+
+    /**
      * Generates the round key schedule for AES. The number of rounds depends on the initialRoundKey length.
      * @param initialRoundKey the initial key which must be either 128 bits (16 bytes)
      * @return an array of byte arrays that is the key schedule for AES. Note that this will be 11 for AES-128
@@ -215,8 +321,6 @@ public class AES {
     public static byte[][] makeKeySchedule(byte[] initialRoundKey) {
         if (initialRoundKey.length != 16)
             throw new IllegalArgumentException("Key size must be 128 bits");
-
-        int rounds = 11;
 
         // First we need to generate our round constants
         byte[][] roundConstants = new byte[11][4];
