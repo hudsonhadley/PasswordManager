@@ -1,3 +1,4 @@
+import javax.crypto.spec.PSource;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLOutput;
@@ -83,7 +84,7 @@ public class Main {
                 System.out.printf("'%s' not found in '%s'\n", name, vault.getName());
         }
 
-        System.out.printf("%s: %s, %s", name, vault.getUsername(name), vault.getPassword(name));
+        System.out.printf("%s:\n\tUsername: %s\n\tPassword: %s\n", name, vault.getUsername(name), vault.getPassword(name));
 
         return name;
     }
@@ -139,7 +140,9 @@ public class Main {
             System.out.println("3. Quit");
 
             int userPick = getOption(1, 3, userScanner);
+            System.out.println();
 
+            // Create new vault
             if (userPick == 1) {
 
                 String vaultName;
@@ -159,125 +162,151 @@ public class Main {
                 Vault vault = new Vault(vaultName, masterPassword);
                 vault.writeToFile();
                 System.out.println("Vault created successfully");
+                System.out.println();
 
+                // Sign in to vault
             } else if (userPick == 2) {
-                String vaultName;
-                while (true) {
-                    System.out.print("Enter the name of a vault: ");
-                    vaultName = userScanner.nextLine();
+                // If there are no vaults to sign in to
+                if (vaults.isEmpty())
+                    System.out.println("No vaults saved");
+                else {
 
-                    if (!vaults.contains(vaultName))
-                        System.out.printf("'%s' vault not found", vaultName);
-                    else
-                        break;
-                }
+                    String vaultName;
+                    while (true) {
+                        System.out.print("Enter the name of a vault: ");
+                        vaultName = userScanner.nextLine();
 
-                System.out.println("Vault found");
-                Vault vault = new Vault(vaultName);
-
-                int strikes = 0; // If they incorrectly enter a password three times, send them back to the home screen
-                // Get the password
-                while (strikes < 3) {
-                    System.out.print("Please enter the password: ");
-                    String password = userScanner.nextLine();
-
-                    if (vault.validatePassword(password))
-                        break;
-
-                    strikes++;
-                }
-                // If they got three strikes, send them back to the home screen
-                if (strikes == 3)
-                    break;
-
-                System.out.println("Vault successfully signed in");
-                vault.listRecords();
-
-                // Operate within the vault
-                boolean deleted = false;
-                while (true) {
-                    System.out.println("What would you like to do?");
-                    System.out.println("1. Add an entry");
-                    System.out.println("2. Edit an entry");
-                    System.out.println("3. Find a password");
-                    System.out.println("4. Delete vault");
-                    System.out.println("5. Quit");
-
-
-                    userPick = getOption(1, 5, userScanner);
-
-
-                    // Add entry
-                    if (userPick == 1) {
-                        System.out.print("Enter the record name: ");
-                        String record = userScanner.nextLine();
-
-                        System.out.print("Enter the username: ");
-                        String username = userScanner.nextLine();
-
-                        String password = confirmPassword(userScanner);
-
-                        vault.addPassword(record, username, password);
-                        System.out.printf("Password for '%s' added\n", record);
-
-                    } else if (userPick == 2) { // Edit entry
-
-                        String name = fetchRecord(userScanner, vault);
-
-                        System.out.println("What would you like to do?");
-                        System.out.println("1. Edit the username");
-                        System.out.println("2. Edit the password");
-                        System.out.println("3. Delete the record");
-                        System.out.println("4. Quit");
-
-                        userPick = getOption(1, 4, userScanner);
-
-                        if (userPick == 1) {
-                            System.out.print("Enter the username: ");
-                            String username = userScanner.nextLine();
-
-                            vault.setPassword(name, username);
-                        } else if (userPick == 2) {
-                            String password = confirmPassword(userScanner);
-                            vault.setPassword(name, password);
-                        } else if (userPick == 3) {
-                            vault.deletePassword(name);
-                        } else { // userPick == 4
+                        if (!vaults.contains(vaultName))
+                            System.out.printf("'%s' vault not found\n", vaultName);
+                        else
                             break;
-                        }
+                    }
 
-                    } else if (userPick == 3) {
-                        fetchRecord(userScanner, vault);
-                    } else if (userPick == 4) {
-                        System.out.println("Are you sure you would like to delete this vault? (y/n)");
+                    Vault vault = new Vault(vaultName);
+
+                    int strikes = 0; // If they incorrectly enter a password three times, send them back to the home screen
+                    // Get the password
+                    while (strikes < 3) {
+                        System.out.print("Please enter the password: ");
+                        String password = userScanner.nextLine();
+
+                        if (vault.validatePassword(password))
+                            break;
+
+                        System.out.println("Incorrect");
+                        System.out.println();
+                        strikes++;
+                    }
+                    // If they got three strikes, skip all this
+                    if (strikes < 3) {
+
+                        System.out.println("Vault successfully signed in");
+                        System.out.println();
+
+
+                        // Operate within the vault
+                        boolean deleted = false;
                         while (true) {
-                            char pick = userScanner.nextLine().toLowerCase().charAt(0);
+                            vault.listRecords();
+                            System.out.println();
 
-                            if (pick == 'y') {
-                                System.out.print("Please confirm password: ");
-                                String password = userScanner.nextLine();
+                            System.out.println("What would you like to do?");
+                            System.out.println("1. Add an entry");
+                            System.out.println("2. Edit an entry");
+                            System.out.println("3. Find a password");
+                            System.out.println("4. Delete vault");
+                            System.out.println("5. Quit");
 
-                                if (password.equals(vault.getMasterPassword())) {
-                                    vault.delete();
-                                    deleted = true;
+
+                            userPick = getOption(1, 5, userScanner);
+                            System.out.println();
+
+
+                            // Add entry
+                            if (userPick == 1) {
+                                System.out.print("Enter the record name: ");
+                                String record = userScanner.nextLine();
+
+                                System.out.print("Enter the username: ");
+                                String username = userScanner.nextLine();
+
+                                String password = confirmPassword(userScanner);
+
+                                vault.addPassword(record, username, password);
+                                System.out.printf("Password for '%s' added\n", record);
+                                System.out.println();
+
+                            } else if (userPick == 2) { // Edit entry
+                                if (vault.getRecords().isEmpty()) {
+                                    System.out.println("No available records");
+                                    System.out.println();
+                                } else {
+
+                                    String name = fetchRecord(userScanner, vault);
+
+                                    System.out.println("What would you like to do?");
+                                    System.out.println("1. Edit the username");
+                                    System.out.println("2. Edit the password");
+                                    System.out.println("3. Delete the record");
+                                    System.out.println("4. Quit");
+
+                                    userPick = getOption(1, 4, userScanner);
+                                    System.out.println();
+
+                                    if (userPick == 1) {
+                                        System.out.print("Enter the username: ");
+                                        String username = userScanner.nextLine();
+
+                                        vault.setPassword(name, username);
+                                    } else if (userPick == 2) {
+                                        String password = confirmPassword(userScanner);
+                                        vault.setPassword(name, password);
+                                    } else if (userPick == 3) {
+                                        vault.deletePassword(name);
+                                    } else { // userPick == 4
+                                        break;
+                                    }
                                 }
-                                else {
-                                    System.out.println("Password incorrect. Vault not deleted");
+                            } else if (userPick == 3) {
+                                if (vault.getRecords().isEmpty()) {
+                                    System.out.println("No available records");
+                                    System.out.println();
+                                } else {
+                                    fetchRecord(userScanner, vault);
                                 }
-                                break;
+                            } else if (userPick == 4) {
+                                System.out.println("Are you sure you would like to delete this vault? (y/n)");
+                                while (true) {
+                                    char pick = userScanner.nextLine().toLowerCase().charAt(0);
 
-                            } else if (pick == 'n') {
+                                    if (pick == 'y') {
+                                        System.out.print("Please confirm password: ");
+                                        String password = userScanner.nextLine();
+
+                                        if (password.equals(vault.getMasterPassword())) {
+                                            vault.delete();
+                                            deleted = true;
+                                        } else {
+                                            System.out.println("Password incorrect. Vault not deleted");
+                                        }
+                                        break;
+
+                                    } else if (pick == 'n') {
+                                        break;
+                                    }
+
+                                    System.out.println();
+                                }
+
+                                // If we deleted the vault, we want to go back home
+                                if (deleted)
+                                    break;
+                            } else { // userPick == 5
+                                // Before we quit the vault, we need to save where we left off
+                                vault.writeToFile();
                                 break;
                             }
                         }
-
-                        // If we deleted the vault, we want to go back home
-                        if (deleted)
-                            break;
-                    } else { // userPick == 5
-                        // Before we quit the vault, we need to save where we left off
-                        vault.writeToFile();
-                        break;
                     }
                 }
             } else { // userPick == 3
