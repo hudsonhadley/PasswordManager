@@ -1,24 +1,19 @@
-import javax.crypto.spec.PSource;
+import java.io.Console;
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLOutput;
-import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Scanner;
-import java.io.FilenameFilter;
 import java.util.Set;
 
 public class Main {
     /**
-     * Gets a number min through max inclusive from the scanner.
+     * Gets a number min through max inclusive from the console.
      * @param min the smallest a number can be
      * @param max the most a number can be
-     * @param scanner the scanner to get input
+     * @param console the console to get input
      * @return a number between min and max from the user
      * @throws IllegalArgumentException if min is greater than max
      */
-    public static int getOption(int min, int max, Scanner scanner) {
+    public static int getOption(int min, int max, Console console) {
         if (min > max) {
             throw new IllegalStateException("Min must be less than or equal to max");
         }
@@ -26,7 +21,7 @@ public class Main {
         // Get a number between min and max from the user
         while (true) {
             try {
-                userPick = Integer.parseInt(scanner.nextLine());
+                userPick = Integer.parseInt(console.readLine());
 
                 if (min <= userPick && userPick <= max)
                     break;
@@ -41,25 +36,44 @@ public class Main {
     }
 
     /**
+     * Gets a line hidden from the console
+     * @return the string typed in
+     */
+    public static String getHiddenLine() {
+        Console console = System.console();
+
+        char[] charPassword = console.readPassword();
+
+        StringBuilder passwordBuilder = new StringBuilder();
+        for (int i = 0; i < charPassword.length; i++) {
+            passwordBuilder.append(charPassword[i]);
+        }
+
+        return passwordBuilder.toString();
+    }
+
+    /**
      * Gets the user to enter a password and confirm it
-     * @param scanner the scanner we want to use for input
+     * @param console the console we want to use for input
      * @return the confirmed password
      */
-    public static String confirmPassword(Scanner scanner) {
+    public static String confirmPassword(Console console) {
         // Get the master password
         String password;
         String confirmedPassword;
 
+        // TODO make password field
         while (true) {
             System.out.print("Enter the password: ");
-            password = scanner.nextLine();
+            password = getHiddenLine();
 
-            System.out.print("Please confirm your password: ");
-            confirmedPassword = scanner.nextLine();
+            System.out.print("Please confirm password: ");
+            confirmedPassword = getHiddenLine();
 
-            if (!password.equals(confirmedPassword))
+            if (!password.equals(confirmedPassword)) {
                 System.out.println("Passwords must match");
-            else
+                System.out.println();
+            } else
                 break;
         }
 
@@ -68,15 +82,19 @@ public class Main {
 
     /**
      * Fetches a record from a vault with user input and prints it
-     * @param scanner the scanner used for input
+     * @param console the console used for input
      * @param vault the vault we want to fetch from
      * @return the name of the record fetched
      */
-    public static String fetchRecord(Scanner scanner, Vault vault) {
+    public static String fetchRecord(Console console, Vault vault) {
+        System.out.println();
+        vault.listRecords();
+        System.out.println();
+
         String name;
         while (true) {
             System.out.print("Enter a record: ");
-            name = scanner.nextLine();
+            name = console.readLine();
 
             if (vault.containsRecord(name))
                 break;
@@ -84,6 +102,7 @@ public class Main {
                 System.out.printf("'%s' not found in '%s'\n", name, vault.getName());
         }
 
+        System.out.println();
         System.out.printf("%s:\n\tUsername: %s\n\tPassword: %s\n", name, vault.getUsername(name), vault.getPassword(name));
 
         return name;
@@ -122,34 +141,47 @@ public class Main {
         return names;
     }
 
+    /**
+     * Prints a line of "-" to the screen
+     */
+    public static void printLine() {
+        int amount = 30;
+
+        for (int i = 0; i < amount; i++) {
+            System.out.print("-");
+        }
+        System.out.println();
+    }
+
     public static void main(String[] args) throws IOException, NoSuchFieldException {
         // Greeting
         // List options
             // Create new vault
             // Sign in to previous vault
             // Delete Vault
-        Scanner userScanner = new Scanner(System.in);
+        Console console = System.console();
 
         System.out.println("Welcome to My Password Manager!");
         while (true) {
             Set<String> vaults = getVaultNames();
 
+            printLine();
             System.out.println("What would you like to do?");
             System.out.println("1. Create a new password vault");
             System.out.println("2. Sign in to a previous password vault");
             System.out.println("3. Quit");
 
-            int userPick = getOption(1, 3, userScanner);
-            System.out.println();
+            int userPick = getOption(1, 3, console);
 
             // Create new vault
             if (userPick == 1) {
+                printLine();
 
                 String vaultName;
                 // Get a vault name that is not already in use
                 while (true) {
                     System.out.print("Enter a vault name: ");
-                    vaultName = userScanner.nextLine();
+                    vaultName = console.readLine();
 
                     if (!vaults.contains(vaultName))
                         break;
@@ -157,28 +189,35 @@ public class Main {
                         System.out.printf("'%s' already in use\n", vaultName);
                 }
 
-                String masterPassword = confirmPassword(userScanner);
+                String masterPassword = confirmPassword(console);
 
                 Vault vault = new Vault(vaultName, masterPassword);
                 vault.writeToFile();
-                System.out.println("Vault created successfully");
                 System.out.println();
+                System.out.println("Vault created successfully");
 
                 // Sign in to vault
             } else if (userPick == 2) {
+                printLine();
                 // If there are no vaults to sign in to
-                if (vaults.isEmpty())
+                if (vaults.isEmpty()) {
                     System.out.println("No vaults saved");
-                else {
+                    System.out.println();
+                } else {
+                    System.out.println("Available vaults:");
+                    for (String vault: vaults)
+                        System.out.println("\t" + vault);
+                    System.out.println();
 
                     String vaultName;
                     while (true) {
                         System.out.print("Enter the name of a vault: ");
-                        vaultName = userScanner.nextLine();
+                        vaultName = console.readLine();
 
-                        if (!vaults.contains(vaultName))
+                        if (!vaults.contains(vaultName)) {
                             System.out.printf("'%s' vault not found\n", vaultName);
-                        else
+                        System.out.println();
+                        } else
                             break;
                     }
 
@@ -188,7 +227,7 @@ public class Main {
                     // Get the password
                     while (strikes < 3) {
                         System.out.print("Please enter the password: ");
-                        String password = userScanner.nextLine();
+                        String password = getHiddenLine();
 
                         if (vault.validatePassword(password))
                             break;
@@ -200,16 +239,14 @@ public class Main {
                     // If they got three strikes, skip all this
                     if (strikes < 3) {
 
-                        System.out.println("Vault successfully signed in");
                         System.out.println();
+                        System.out.println("Vault successfully signed in");
 
 
                         // Operate within the vault
                         boolean deleted = false;
                         while (true) {
-                            vault.listRecords();
-                            System.out.println();
-
+                            printLine();
                             System.out.println("What would you like to do?");
                             System.out.println("1. Add an entry");
                             System.out.println("2. Edit an entry");
@@ -218,31 +255,42 @@ public class Main {
                             System.out.println("5. Quit");
 
 
-                            userPick = getOption(1, 5, userScanner);
+                            userPick = getOption(1, 5, console);
                             System.out.println();
 
 
                             // Add entry
                             if (userPick == 1) {
-                                System.out.print("Enter the record name: ");
-                                String record = userScanner.nextLine();
+                                printLine();
+
+                                String record;
+                                while (true) {
+                                    System.out.print("Enter the record name: ");
+                                    record = console.readLine();
+
+                                    if (vault.containsRecord(record)) {
+                                        System.out.printf("'%s' already contains '%s'\n", vaultName, record);
+                                        System.out.println();
+                                    } else
+                                        break;
+                                }
 
                                 System.out.print("Enter the username: ");
-                                String username = userScanner.nextLine();
+                                String username = console.readLine();
 
-                                String password = confirmPassword(userScanner);
+                                String password = confirmPassword(console);
 
                                 vault.addPassword(record, username, password);
-                                System.out.printf("Password for '%s' added\n", record);
                                 System.out.println();
+                                System.out.printf("Password for '%s' added\n", record);
 
                             } else if (userPick == 2) { // Edit entry
+                                printLine();
                                 if (vault.getRecords().isEmpty()) {
                                     System.out.println("No available records");
                                     System.out.println();
                                 } else {
-
-                                    String name = fetchRecord(userScanner, vault);
+                                    String name = fetchRecord(console, vault);
 
                                     System.out.println("What would you like to do?");
                                     System.out.println("1. Edit the username");
@@ -250,40 +298,47 @@ public class Main {
                                     System.out.println("3. Delete the record");
                                     System.out.println("4. Quit");
 
-                                    userPick = getOption(1, 4, userScanner);
+                                    userPick = getOption(1, 4, console);
                                     System.out.println();
 
                                     if (userPick == 1) {
+                                        printLine();
                                         System.out.print("Enter the username: ");
-                                        String username = userScanner.nextLine();
+                                        String username = console.readLine();
 
                                         vault.setPassword(name, username);
                                     } else if (userPick == 2) {
-                                        String password = confirmPassword(userScanner);
+                                        printLine();
+                                        String password = confirmPassword(console);
                                         vault.setPassword(name, password);
                                     } else if (userPick == 3) {
+                                        printLine();
                                         vault.deletePassword(name);
                                     } else { // userPick == 4
                                         break;
                                     }
                                 }
                             } else if (userPick == 3) {
+                                printLine();
                                 if (vault.getRecords().isEmpty()) {
                                     System.out.println("No available records");
                                     System.out.println();
                                 } else {
-                                    fetchRecord(userScanner, vault);
+                                    fetchRecord(console, vault);
                                 }
                             } else if (userPick == 4) {
+                                printLine();
                                 System.out.println("Are you sure you would like to delete this vault? (y/n)");
                                 while (true) {
-                                    char pick = userScanner.nextLine().toLowerCase().charAt(0);
+                                    char pick = console.readLine().toLowerCase().charAt(0);
 
                                     if (pick == 'y') {
                                         System.out.print("Please confirm password: ");
-                                        String password = userScanner.nextLine();
+                                        String password = getHiddenLine();
 
                                         if (password.equals(vault.getMasterPassword())) {
+                                            System.out.printf("'%s' deleted\n", vaultName);
+                                            System.out.println();
                                             vault.delete();
                                             deleted = true;
                                         } else {
@@ -294,7 +349,6 @@ public class Main {
                                     } else if (pick == 'n') {
                                         break;
                                     }
-
                                     System.out.println();
                                 }
 
@@ -310,6 +364,7 @@ public class Main {
                     }
                 }
             } else { // userPick == 3
+                printLine();
                 break;
             }
         }
