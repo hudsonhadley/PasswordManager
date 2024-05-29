@@ -1,8 +1,6 @@
 import java.io.*;
 import java.rmi.AlreadyBoundException;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * A class to store passwords. Passwords can be written to a file in an encrypted manner. A master
@@ -100,6 +98,8 @@ public class Vault {
 
             lineScanner.close();
         }
+
+        inputStream.close();
     }
 
     /**
@@ -133,6 +133,13 @@ public class Vault {
         }
 
         return vaultBuilder.toString();
+    }
+
+    /**
+     * @return the name of the vault
+     */
+    public String getName() {
+        return name;
     }
 
     /**
@@ -193,5 +200,53 @@ public class Vault {
      */
     public void setPassword(String name, String password) {
         passwords.get(name).setPassword(password);
+    }
+
+    /**
+     * @return the set of record names
+     */
+    public Set<String> getRecords() {
+        return passwords.keySet();
+    }
+
+    /**
+     * Prints out a list of all the records
+     */
+    public void listRecords() {
+        System.out.printf("Available records in '%s':\n", name);
+        for (String record : passwords.keySet())
+            System.out.println("\t" + record);
+    }
+
+    /**
+     * @param name the name of a record we want to see if it is in the vault
+     * @return true if the name is in the vault as a record
+     */
+    public boolean containsRecord(String name) {
+        return passwords.containsKey(name);
+    }
+
+    /**
+     * @param name the name of the password we want to retrieve
+     * @return the password for the name
+     */
+    public String getPassword(String name) {
+        return passwords.get(name).getPassword();
+    }
+
+    /**
+     * @param name the name of the username we want to retrieve
+     * @return the username for the name
+     */
+    public String getUsername(String name) {
+        return passwords.get(name).getUsername();
+    }
+
+    /**
+     * Deletes the vault by removing the file it is stored in
+     */
+    public void delete() {
+        File file = new File(name + ".pmv");
+        file.delete();
     }
 }
