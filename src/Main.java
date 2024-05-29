@@ -62,7 +62,6 @@ public class Main {
         String password;
         String confirmedPassword;
 
-        // TODO make password field
         while (true) {
             System.out.print("Enter the password: ");
             password = getHiddenLine();
@@ -113,10 +112,10 @@ public class Main {
      * @return a Set of Strings with vault names
      */
     public static Set<String> getVaultNames() {
-        // This is the main project directory that holds src
-        File projectDirectory = new File(".");
+        String vaultDirectory = System.getProperty("java.class.path") + "/../../../vaults";
+        File vaults = new File(vaultDirectory);
 
-        String[] fileNames = projectDirectory.list();
+        String[] fileNames = vaults.list();
 
         if (fileNames == null)
             return new HashSet<>();
@@ -154,11 +153,6 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException, NoSuchFieldException {
-        // Greeting
-        // List options
-            // Create new vault
-            // Sign in to previous vault
-            // Delete Vault
         Console console = System.console();
 
         System.out.println("Welcome to My Password Manager!");

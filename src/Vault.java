@@ -22,6 +22,10 @@ public class Vault {
      * A map of names to passwords. An example of this could be "Netflix" --> (username, password)
      */
     private Map<String, Password> passwords;
+    /**
+     * The directory where the vaults are stored
+     */
+    private final String VAULT_DIRECTORY = System.getProperty("java.class.path") + "/../../../vaults/";
 
     /**
      * Constructs an empty vault, with a given name. After this is called, the user should validate a password to
@@ -70,8 +74,8 @@ public class Vault {
      * Reads an encrypted file and sets the member variables as defined in the file.
      * @throws IOException if the file is not found or if the file is formatted incorrectly
      */
-    public void readFile() throws IOException {
-        File file = new File(name + ".pmv");
+    public void readFile() throws IOException {;
+        File file = new File(VAULT_DIRECTORY + name + ".pmv");
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
 
@@ -113,7 +117,13 @@ public class Vault {
 
         byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword);
 
-        FileOutputStream outFile = new FileOutputStream(name + ".pmv");
+        // If the vaults directory doesn't exist yet, create it
+        File file = new File(VAULT_DIRECTORY);
+        if (!file.exists()) {
+            file.mkdir();
+        }
+
+        FileOutputStream outFile = new FileOutputStream(VAULT_DIRECTORY + name + ".pmv");
         outFile.write(encryptedBytes);
         outFile.close();
     }
@@ -246,7 +256,7 @@ public class Vault {
      * Deletes the vault by removing the file it is stored in
      */
     public void delete() {
-        File file = new File(name + ".pmv");
+        File file = new File(VAULT_DIRECTORY + name + ".pmv");
         file.delete();
     }
 }
