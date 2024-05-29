@@ -1,4 +1,5 @@
 import java.io.*;
+import java.rmi.AlreadyBoundException;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -25,10 +26,13 @@ public class Vault {
     private Map<String, Password> passwords;
 
     /**
-     * Constructs an empty vault, initializing the member variables
+     * Constructs an empty vault, with a given name. After this is called, the user should validate a password to
+     * restore a saved vault. To create a new vault instead, the Vault(String, String) constructor ought to be used
+     * instead.
+     * @param name the name we want to give to a new vault
      */
-    public Vault() {
-        name = "";
+    public Vault(String name) {
+        this.name = name;
         masterPassword = "";
         passwords = new HashMap<>();
     }
@@ -45,15 +49,42 @@ public class Vault {
     }
 
     /**
+     * Validates a password by seeing if it correctly decrypts the corresponding file.
+     * @param masterPassword the password we want to use to decrypt
+     * @throws IllegalStateException if the password has already been set
+     */
+    public boolean validatePassword(String masterPassword) {
+        if (!this.masterPassword.isEmpty())
+            throw new IllegalStateException("Password is already set");
+
+        this.masterPassword = masterPassword;
+
+        try {
+            readFile();
+            return true;
+        } catch (IOException ioe) {
+            this.masterPassword = "";
+            return false;
+        }
+    }
+
+    /**
      * Reads an encrypted file and sets the member variables as defined in the file.
      * @throws IOException if the file is not found or if the file is formatted incorrectly
      */
     public void readFile() throws IOException {
-        File file = new File(name);
+        File file = new File(name + ".pmv");
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
 
-        String decryptedString = AES.decrypt(fileBytes, masterPassword);
+        String decryptedString;
+        // If we fail to decrypt the file, it will be unable to decrypt due to the key being wrong,
+        try {
+            decryptedString = AES.decrypt(fileBytes, masterPassword);
+        } catch (IllegalArgumentException iae) {
+            throw new IOException("File not formatted properly");
+        }
+
         Scanner stringScanner = new Scanner(decryptedString);
 
         Scanner lineScanner;
@@ -82,7 +113,7 @@ public class Vault {
 
         byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword);
 
-        FileOutputStream outFile = new FileOutputStream(name);
+        FileOutputStream outFile = new FileOutputStream(name + ".pmv");
         outFile.write(encryptedBytes);
         outFile.close();
     }
