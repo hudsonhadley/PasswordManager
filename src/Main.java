@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Arrays;
 
 public class Main {
     /**
@@ -37,19 +38,13 @@ public class Main {
 
     /**
      * Gets a line hidden from the console
+     * @param console the console we get input from
+     * @param prompt the prompt we want to give to the user
      * @return the string typed in
      */
-    public static String getHiddenLine() {
-        Console console = System.console();
-
-        char[] charPassword = console.readPassword();
-
-        StringBuilder passwordBuilder = new StringBuilder();
-        for (int i = 0; i < charPassword.length; i++) {
-            passwordBuilder.append(charPassword[i]);
-        }
-
-        return passwordBuilder.toString();
+    public static String getHiddenLine(Console console, String prompt) {
+        char[] charPassword = console.readPassword(prompt);
+        return new String(charPassword);
     }
 
     /**
@@ -63,11 +58,9 @@ public class Main {
         String confirmedPassword;
 
         while (true) {
-            System.out.print("Enter the password: ");
-            password = getHiddenLine();
+            password = getHiddenLine(console, "Enter the password: ");
 
-            System.out.print("Please confirm password: ");
-            confirmedPassword = getHiddenLine();
+            confirmedPassword = getHiddenLine(console, "Please confirm password: ");
 
             if (!password.equals(confirmedPassword)) {
                 System.out.println("Passwords must match");
@@ -220,8 +213,7 @@ public class Main {
                     int strikes = 0; // If they incorrectly enter a password three times, send them back to the home screen
                     // Get the password
                     while (strikes < 3) {
-                        System.out.print("Please enter the password: ");
-                        String password = getHiddenLine();
+                        String password = getHiddenLine(console, "Please enter the password: ");
 
                         if (vault.validatePassword(password))
                             break;
@@ -308,9 +300,7 @@ public class Main {
                                     } else if (userPick == 3) {
                                         printLine();
                                         vault.deletePassword(name);
-                                    } else { // userPick == 4
-                                        break;
-                                    }
+                                    } // If they pick 4, we will do nothing
                                 }
                             } else if (userPick == 3) {
                                 printLine();
@@ -327,8 +317,7 @@ public class Main {
                                     char pick = console.readLine().toLowerCase().charAt(0);
 
                                     if (pick == 'y') {
-                                        System.out.print("Please confirm password: ");
-                                        String password = getHiddenLine();
+                                        String password = getHiddenLine(console, "Please confirm password: ");
 
                                         if (password.equals(vault.getMasterPassword())) {
                                             System.out.printf("'%s' deleted\n", vaultName);
