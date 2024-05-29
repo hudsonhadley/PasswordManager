@@ -551,9 +551,15 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
             paddedBytes.add(aByte);
         }
 
-        // We will add the opposite of the last bit (if it is 1, 0s will be added)
-        // Performing the and operation on the last byte with 0x01 cancels everything out but the last bit
-        byte padding = ((bytes[bytes.length - 1] & 0x01) == 0x01) ? b(0xff) : b(0x01);
+        byte padding;
+
+        if (bytes.length == 0) {
+            padding = b(0xff);
+        } else {
+            // We will add the opposite of the last bit (if it is 1, 0s will be added)
+            // Performing the and operation on the last byte with 0x01 cancels everything out but the last bit
+            padding = ((bytes[bytes.length - 1] & 0x01) == 0x01) ? b(0xff) : b(0x00);
+        }
 
         paddedBytes.add(padding);
         while (paddedBytes.size() % divisibility != 0) {
@@ -580,7 +586,7 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
         int endOfText = bytes.length - 1;
 
         byte padding = bytes[endOfText];
-        while (bytes[endOfText] == padding) {
+        while (endOfText >= 0 && bytes[endOfText] == padding) {
             endOfText--;
         }
 
