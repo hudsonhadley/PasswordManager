@@ -74,7 +74,7 @@ public class Vault {
      * Reads an encrypted file and sets the member variables as defined in the file.
      * @throws IOException if the file is not found or if the file is formatted incorrectly
      */
-    public void readFile() throws IOException {;
+    public void readFile() throws IOException {
         File file = new File(VAULT_DIRECTORY + name + ".pmv");
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
@@ -88,11 +88,12 @@ public class Vault {
         }
 
         Scanner stringScanner = new Scanner(decryptedString);
+        stringScanner.useDelimiter("\n\n");
 
         Scanner lineScanner;
         while (stringScanner.hasNext()) {
-            lineScanner = new Scanner(stringScanner.nextLine());
-            lineScanner.useDelimiter(", ");
+            lineScanner = new Scanner(stringScanner.next());
+            lineScanner.useDelimiter("\n");
 
             String name = lineScanner.next();
             String username = lineScanner.next();
@@ -138,7 +139,7 @@ public class Vault {
         for (String record: passwords.keySet()) {
             Password recordPassword = passwords.get(record);
 
-            vaultBuilder.append(String.format("%s, %s, %s\n",
+            vaultBuilder.append(String.format("%s\n%s\n%s\n\n",
                     record, recordPassword.getUsername(), recordPassword.getPassword()));
         }
 

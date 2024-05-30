@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Arrays;
 
 public class Main {
     /**
@@ -222,8 +221,9 @@ public class Main {
                         System.out.println();
                         strikes++;
                     }
-                    // If they got three strikes, skip all this
-                    if (strikes < 3) {
+                    if (strikes == 3) {
+                        System.out.println("Please try a different vault");
+                    } else {
 
                         System.out.println();
                         System.out.println("Vault successfully signed in");
@@ -292,11 +292,13 @@ public class Main {
                                         System.out.print("Enter the username: ");
                                         String username = console.readLine();
 
-                                        vault.setPassword(name, username);
+                                        vault.setUsername(name, username);
+                                        System.out.printf("Username updated for '%s'\n", name);
                                     } else if (userPick == 2) {
                                         printLine();
                                         String password = confirmPassword(console);
                                         vault.setPassword(name, password);
+                                        System.out.printf("Password updated for '%s'\n", name);
                                     } else if (userPick == 3) {
                                         printLine();
                                         vault.deletePassword(name);
