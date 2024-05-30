@@ -36,7 +36,7 @@ public class Vault {
     public Vault(String name) {
         this.name = name;
         masterPassword = "";
-        passwords = new HashMap<>();
+        passwords = new TreeMap<>();
     }
 
     /**
