@@ -1,6 +1,7 @@
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -551,20 +552,12 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
             paddedBytes.add(aByte);
         }
 
-        byte padding;
+        // Add a 10000000
+        paddedBytes.add(b(0x80));
 
-        if (bytes.length == 0) {
-            padding = b(0xff);
-        } else {
-            // We will add the opposite of the last bit (if it is 1, 0s will be added)
-            // Performing the and operation on the last byte with 0x01 cancels everything out but the last bit
-            padding = ((bytes[bytes.length - 1] & 0x01) == 0x01) ? b(0xff) : b(0x00);
-        }
-
-        paddedBytes.add(padding);
-        while (paddedBytes.size() % divisibility != 0) {
-            paddedBytes.add(padding);
-        }
+        // Keep adding 00000000 til we reach the divisibility
+        while (paddedBytes.size() % divisibility != 0)
+            paddedBytes.add(b(0x00));
 
         byte[] newBytes = new byte[paddedBytes.size()];
 
@@ -585,12 +578,11 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
     private static byte[] strip(byte[] bytes) {
         int endOfText = bytes.length - 1;
 
-        byte padding = bytes[endOfText];
-        while (endOfText >= 0 && bytes[endOfText] == padding) {
+        // Find the end of the text where we placed the 10000000
+        while (endOfText > 0 && bytes[endOfText] != b(0x80))
             endOfText--;
-        }
 
-        byte[] stripped = new byte[endOfText + 1];
+        byte[] stripped = new byte[endOfText];
         for (int i = 0; i < stripped.length; i++)
             stripped[i] = bytes[i];
 
