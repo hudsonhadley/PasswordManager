@@ -76,7 +76,7 @@ public class MD5 {
         // We need to change the last 8 bytes (64 bits) to be the length of the original message mod 2^64
         byte[] length = intToByteArray(bytes.length * 8, 8);
         for (int i = 0; i < length.length; i++) {
-            paddedBytes[paddedBytes.length - 9 + i] = length[i];
+            paddedBytes[paddedBytes.length - 8 + i] = length[i];
         }
 
         return paddedBytes;
@@ -89,7 +89,7 @@ public class MD5 {
      * @param capacity the maximum amount of bytes we want to use to represent the integer
      * @return a byte array representing the wrapped integer
      */
-    public static byte[] intToByteArray(int input, int capacity) {
+    private static byte[] intToByteArray(int input, int capacity) {
         input %= (int) Math.pow(2, capacity * 8); // Wrap the input, so we can fit it into the given bytes allowed
 
         // This will be initialized with all 0s
