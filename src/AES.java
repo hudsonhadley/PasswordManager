@@ -329,7 +329,7 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
         byte[][] blocks = new byte[bytes.length / blockSize][blockSize];
 
         for (int i = 0; i < bytes.length / blockSize; i++) {
-            for (int j = 0; j < 16; j++) {
+            for (int j = 0; j < blockSize; j++) {
                 blocks[i][j] = bytes[i * blockSize + j];
             }
         }
