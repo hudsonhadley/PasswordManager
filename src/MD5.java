@@ -1,3 +1,4 @@
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,12 +71,10 @@ public class MD5 {
      * @return the padded byte array
      */
     private static byte[] pad(byte[] bytes) {
-        byte[] length = ByteBuffer.allocate(8).putInt(bytes.length * 8).array();
-        System.out.println(bytes.length * 8);
-        System.out.println(Arrays.toString(length));
         byte[] paddedBytes = pad(bytes, 64); // Make its 512-bits (64-bytes)
 
         // We need to change the last 8 bytes (64 bits) to be the length of the original message mod 2^64
+        byte[] length = intToByteArray(bytes.length * 8, 8);
         for (int i = 0; i < length.length; i++) {
             paddedBytes[paddedBytes.length - 9 + i] = length[i];
         }
@@ -90,8 +89,20 @@ public class MD5 {
      * @param capacity the maximum amount of bytes we want to use to represent the integer
      * @return a byte array representing the wrapped integer
      */
-    private static byte[] intToByteArray(int input, int capacity) {
-        return new byte[]{};
+    public static byte[] intToByteArray(int input, int capacity) {
+        input %= (int) Math.pow(2, capacity * 8); // Wrap the input, so we can fit it into the given bytes allowed
+
+        // This will be initialized with all 0s
+        byte[] bytes = new byte[capacity];
+
+        // Now we need to fill the last bytes with the input in bytes
+        byte[] inputInBytes = BigInteger.valueOf(input).toByteArray();
+        int startIndex = bytes.length - inputInBytes.length;
+        for (int i = 0; i < inputInBytes.length; i++) {
+            bytes[startIndex + i] = inputInBytes[i];
+        }
+
+        return bytes;
     }
 
     /**
