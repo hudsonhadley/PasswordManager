@@ -64,7 +64,7 @@ public class Vault {
         try {
             readFile();
             return true;
-        } catch (IOException ioe) {
+        } catch (Exception e) {
             this.masterPassword = "";
             return false;
         }
@@ -72,15 +72,16 @@ public class Vault {
 
     /**
      * Reads an encrypted file and sets the member variables as defined in the file.
-     * @throws IOException if the file is not found or if the file is formatted incorrectly
+     * @throws IOException if the file is not found
+     * @throws NoSuchElementException if the file is not properly formatted
      */
-    public void readFile() throws IOException {
+    public void readFile() throws IOException, NoSuchElementException {
         File file = new File(VAULT_DIRECTORY + name + ".pmv");
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
 
         String decryptedString;
-        // If we fail to decrypt the file, it will be unable to decrypt due to the key being wrong,
+        // If we fail to decrypt the file, it will be unable to decrypt due to the key being wrong
         try {
             decryptedString = AES.decrypt(fileBytes, masterPassword);
         } catch (IllegalArgumentException iae) {
@@ -89,6 +90,11 @@ public class Vault {
 
         Scanner stringScanner = new Scanner(decryptedString);
         stringScanner.useDelimiter("\n\n");
+
+        // This first line should be the name. If this doesn't match, it is the wrong password (this is in case the
+        // vault is empty to start. Something must be decrypted)
+        if (!this.name.equals(stringScanner.next()))
+            throw new NoSuchElementException("Incorrect password. Name invalid");
 
         Scanner lineScanner;
         while (stringScanner.hasNext()) {
@@ -135,6 +141,8 @@ public class Vault {
     @Override
     public String toString() {
         StringBuilder vaultBuilder = new StringBuilder();
+        vaultBuilder.append(name);
+        vaultBuilder.append("\n\n");
 
         for (String record: passwords.keySet()) {
             Password recordPassword = passwords.get(record);
