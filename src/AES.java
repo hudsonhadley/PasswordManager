@@ -1,5 +1,3 @@
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -302,7 +300,7 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
      * @return the encrypted byte array
      */
     public static byte[] encrypt(String plaintext, String key) {
-        return encrypt(stringToByteArray(plaintext), expandKey(key, 128));
+        return encrypt(stringToByteArray(plaintext), expandKey(key));
     }
 
     /**
@@ -312,7 +310,7 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
      * @return the decrypted String
      */
     public static String decrypt(byte[] ciphertext, String key) {
-        return decrypt(ciphertext, expandKey(key, 128));
+        return decrypt(ciphertext, expandKey(key));
     }
 
     /**
@@ -672,26 +670,45 @@ b(0xd7), b(0xd9), b(0xcb), b(0xc5), b(0xef), b(0xe1), b(0xf3), b(0xfd), b(0xa7),
     }
 
     /**
-     * Expands a key to a certain bit length
+     * Expands a key to 128 bits using the MD5 hashing algorithm
      * @param key the String we want to expand
-     * @param length the length we want the key to have in bits
      * @return the expanded key
-     * @throws IllegalArgumentException if we are unable to generate the key
      */
-    private static byte[] expandKey(String key, int length) throws IllegalArgumentException {
-        Random randomSaltGenerator = new Random(71504);
-        byte[] salt = new byte[16];
-        randomSaltGenerator.nextBytes(salt);
-        int iterations = 1024;
+    public static byte[] expandKey(String key) throws IllegalArgumentException {
+        byte[] bytes = MD5.hash(key); // We will start just by hashing to get our string into bytes
 
-        PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), salt, iterations, length);
-        try {
-            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        // These two calculated values will be used to determine the salt and amount of iterations
+        // Note that for a specific key, these values will be the same each time it is ran, meaning the same expanded
+        // key will be generated.
+        int multipledASCIIs = 1;
+        int summedASCIIs = 0;
 
-            return skf.generateSecret(spec).getEncoded();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to generate key");
+        for (int i = 0; i < key.length(); i++) {
+            multipledASCIIs *= key.charAt(i);
+            summedASCIIs += key.charAt(i);
         }
+        // We will hash this many times
+        Random random = new Random(summedASCIIs);
+
+        // 10,000 seems to be the max before a delay starts to be perceived
+        int iterations = random.nextInt(10000);
+
+
+        // We will add salt in each time before we hash to add an element of randomness
+        random = new Random(multipledASCIIs);
+
+        for (int i = 0; i < iterations; i++) {
+            // For each iteration, we will add a certain amount of random bytes
+            byte[] saltedBytes = Arrays.copyOf(bytes, 16 + random.nextInt(key.length()));
+
+            for (int j = 16; j < saltedBytes.length; j++)
+                saltedBytes[j] = b(random.nextInt());
+
+            // Once we add the random bytes, we will hash to generate
+            bytes = MD5.hash(saltedBytes);
+        }
+
+        return bytes;
     }
 
     /**
