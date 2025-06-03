@@ -22,19 +22,34 @@ public class Vault {
      * A map of names to passwords. An example of this could be "Netflix" --> (username, password)
      */
     private Map<String, Password> passwords;
-    /**
-     * The directory where the vaults are stored
-     */
-    private final String VAULT_DIRECTORY = System.getProperty("java.class.path") + "/../../../vaults/";
 
+    private String vaultDirectory;
+    
     /**
-     * Constructs an empty vault, with a given name. After this is called, the user should validate a password to
-     * restore a saved vault. To create a new vault instead, the Vault(String, String) constructor ought to be used
-     * instead.
+     * Constructs an empty vault, with a given filename. The vault name will be the name of the file.
+     * Note that the file should have a .pmv extension
      * @param name the name we want to give to a new vault
+     * @throws IllegalArgumentException if the file does not end in .pmv
      */
-    public Vault(String name) {
-        this.name = name;
+    public Vault(String filename) throws IllegalArgumentException {
+        filename = filename.replace("\\", "/");
+        String[] path = filename.split("/");
+
+        String regex = ".*\\.pmv";
+        if (!path[path.length - 1].matches(regex)) {
+            throw new IllegalArgumentException("Vaults must have .pmv extensions");
+        }
+
+        // Get everything upto the filename
+
+        StringBuilder vaultDirectoryBuilder = new StringBuilder();
+        for (int i = 0; i < path.length - 1; i++) {
+            vaultDirectoryBuilder.append(path[i]);
+            vaultDirectoryBuilder.append("/");
+        }
+
+        vaultDirectory = vaultDirectoryBuilder.toString();
+        this.name = path[path.length - 1].substring(0, path[path.length - 1].length() - 4);
         masterPassword = "";
         passwords = new TreeMap<>();
     }
@@ -76,7 +91,7 @@ public class Vault {
      * @throws NoSuchElementException if the file is not properly formatted
      */
     public void readFile() throws IOException, NoSuchElementException {
-        File file = new File(VAULT_DIRECTORY + name + ".pmv");
+        File file = new File(vaultDirectory + name + ".pmv");
         FileInputStream inputStream = new FileInputStream(file);
         byte[] fileBytes = inputStream.readAllBytes();
 
@@ -125,12 +140,12 @@ public class Vault {
         byte[] encryptedBytes = AES.encrypt(this.toString(), masterPassword);
 
         // If the vaults directory doesn't exist yet, create it
-        File file = new File(VAULT_DIRECTORY);
+        File file = new File(vaultDirectory);
         if (!file.exists()) {
             file.mkdir();
         }
 
-        FileOutputStream outFile = new FileOutputStream(VAULT_DIRECTORY + name + ".pmv");
+        FileOutputStream outFile = new FileOutputStream(vaultDirectory + name + ".pmv");
         outFile.write(encryptedBytes);
         outFile.close();
     }
@@ -265,7 +280,7 @@ public class Vault {
      * Deletes the vault by removing the file it is stored in
      */
     public void delete() {
-        File file = new File(VAULT_DIRECTORY + name + ".pmv");
+        File file = new File(vaultDirectory + name + ".pmv");
         file.delete();
     }
 }

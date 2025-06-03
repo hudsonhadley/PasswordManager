@@ -103,8 +103,7 @@ public class Main {
      * Searches the project folder for vaults
      * @return a Set of Strings with vault names
      */
-    public static Set<String> getVaultNames() {
-        String vaultDirectory = System.getProperty("java.class.path") + "/../../../vaults";
+    public static Set<String> getVaultNames(String vaultDirectory) {
         File vaults = new File(vaultDirectory);
 
         String[] fileNames = vaults.list();
@@ -147,9 +146,16 @@ public class Main {
     public static void main(String[] args) throws IOException, NoSuchFieldException {
         Console console = System.console();
 
+        if (args.length < 2) {
+            System.out.println("User must specify vault directory");
+	    return;
+	}
+
+	String vaultDirectory = args[1];
+
         System.out.println("Welcome to My Password Manager!");
         while (true) {
-            Set<String> vaults = getVaultNames();
+            Set<String> vaults = getVaultNames(vaultDirectory);
 
             printLine();
             System.out.println("What would you like to do?");
@@ -207,13 +213,13 @@ public class Main {
                             break;
                     }
 
-                    Vault vault = new Vault(vaultName);
-
+                    Vault vault = new Vault(vaultDirectory + "/" + vaultName + ".pmv");
+                    
                     int strikes = 0; // If they incorrectly enter a password three times, send them back to the home screen
                     // Get the password
                     while (strikes < 3) {
                         String password = getHiddenLine(console, "Please enter the password: ");
-
+                        
                         if (vault.validatePassword(password))
                             break;
 
