@@ -1,5 +1,4 @@
 import java.io.*;
-import java.rmi.AlreadyBoundException;
 import java.util.*;
 
 /**
@@ -55,12 +54,29 @@ public class Vault {
     }
 
     /**
-     * Constructs a new vault with a certain name and master password
-     * @param name the name we want to ascribe
+     * Constructs a new vault with a certain path/name and master password
+     * @param filename the path of the new vault
      * @param masterPassword the master password we want to ascribe
      */
-    public Vault(String name, String masterPassword) {
-        this.name = name;
+    public Vault(String filename, String masterPassword) {
+        filename = filename.replace("\\", "/");
+        String[] path = filename.split("/");
+
+        String regex = ".*\\.pmv";
+        if (!path[path.length - 1].matches(regex)) {
+            throw new IllegalArgumentException("Vaults must have .pmv extensions");
+        }
+
+        // Get everything upto the filename
+
+        StringBuilder vaultDirectoryBuilder = new StringBuilder();
+        for (int i = 0; i < path.length - 1; i++) {
+            vaultDirectoryBuilder.append(path[i]);
+            vaultDirectoryBuilder.append("/");
+        }
+
+        vaultDirectory = vaultDirectoryBuilder.toString();
+        this.name = path[path.length - 1].substring(0, path[path.length - 1].length() - 4);
         this.masterPassword = masterPassword;
         passwords = new HashMap<>();
     }
@@ -100,6 +116,7 @@ public class Vault {
         try {
             decryptedString = AES.decrypt(fileBytes, masterPassword);
         } catch (IllegalArgumentException iae) {
+            inputStream.close();
             throw new IOException("File not formatted properly");
         }
 
@@ -108,9 +125,11 @@ public class Vault {
 
         // This first line should be the name. If this doesn't match, it is the wrong password (this is in case the
         // vault is empty to start. Something must be decrypted)
-        if (!this.name.equals(stringScanner.next()))
+        if (!this.name.equals(stringScanner.next())) {
+            stringScanner.close();
+            inputStream.close();
             throw new NoSuchElementException("Incorrect password. Name invalid");
-
+        }
         Scanner lineScanner;
         while (stringScanner.hasNext()) {
             lineScanner = new Scanner(stringScanner.next());
@@ -124,7 +143,7 @@ public class Vault {
 
             lineScanner.close();
         }
-
+        stringScanner.close();
         inputStream.close();
     }
 
